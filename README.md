@@ -9,7 +9,32 @@ This repository contains code for analyzing transfer and interference patterns i
 
 ## Project Structure
 
-<pre> ``` transfer-interference/ ├── data/ │ ├── participants/ │ │ ├── raw/ │ │ ├── trial_df.csv │ │ └── human_vonmises_fits.csv │ └── simulations/ ├── figures/ │ ├── figure2_transfer_interference/ │ ├── figure3_anns/ │ └── figure4_individual_differences/ ├── notebooks/ │ ├── figure2_transfer_interference.ipynb │ ├── figure3_anns.ipynb │ └── figure4_individual_differences.ipynb ├── scripts/ │ ├── 01_preprocess_data.py │ ├── 02_run_simulations.py │ └── 03_fit_vonmises.py └── src/ ├── analysis/ ├── models/ └── utils/ ``` </pre>
+```
+transfer-interference/
+├── data/
+│   ├── participants/
+│   │   ├── raw/
+│   │   ├── trial_df.csv
+│   │   └── human_vonmises_fits.csv
+│   └── simulations/
+├── figures/
+│   ├── figure2_transfer_interference/
+│   ├── figure3_anns/
+│   └── figure4_individual_differences/
+├── notebooks/
+│   ├── figure2_transfer_interference.ipynb
+│   ├── figure3_anns.ipynb
+│   └── figure4_individual_differences.ipynb
+├── scripts/
+│   ├── 01_preprocess_data.py
+│   ├── 02_run_simulations.py
+│   └── 03_fit_vonmises.py
+└── src/
+    ├── analysis/
+    ├── models/
+    └── utils/
+```
+
 
 ## Setup and Installation
 
