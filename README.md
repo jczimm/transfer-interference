@@ -9,37 +9,16 @@ This repository contains code for analyzing transfer and interference patterns i
 
 ## Project Structure
 
-├── data/ # Data directory
-│ ├── participants/ # Human participant data
-│ │ ├── raw/ # Raw participant data files
-│ │ ├── trial_df.csv # Processed trial data
-│ │ └── human_vonmises_fits.csv # Group-level parameter fits 
-│ └── simulations/ # Neural network simulation results
-├── figures/ # Generated figures saved as png files
-│ ├── figure2_transfer_interference/
-│ ├── figure3_anns/
-│ └── figure4_individual_differences/
-├── notebooks/ # Analysis notebooks for reproducing main text figures
-│ ├── figure2_transfer_interference.ipynb
-│ ├── figure3_anns.ipynb
-│ └── figure4_individual_differences.ipynb
-├── scripts/ # Processing scripts
-│ ├── 01_preprocess_data.py
-│ ├── 02_run_simulations.py
-│ └── 03_fit_vonmises.py
-└── src/ # Source code
-├── analysis/ # Analysis modules for participants and ANNs
-├── models/ # Model implementations for von mises and ANNs
-└── utils/ # Utility functions 
+project-root/ ├── data/ # Data directory │ ├── participants/ # Human participant data │ │ ├── raw/ # Raw participant data files │ │ ├── trial_df.csv # Processed trial data │ │ └── human_vonmises_fits.csv # Group-level parameter fits │ └── simulations/ # Neural network simulation results ├── figures/ # Generated figures saved as PNG files │ ├── figure2_transfer_interference/ │ ├── figure3_anns/ │ └── figure4_individual_differences/ ├── notebooks/ # Analysis notebooks for reproducing main text figures │ ├── figure2_transfer_interference.ipynb │ ├── figure3_anns.ipynb │ └── figure4_individual_differences.ipynb ├── scripts/ # Processing scripts │ ├── 01_preprocess_data.py │ ├── 02_run_simulations.py │ └── 03_fit_vonmises.py └── src/ # Source code ├── analysis/ # Analysis modules for participants and ANNs ├── models/ # Model implementations for von Mises and ANNs └── utils/ # Utility functions
 
 
 ## Setup and Installation
 
 1. Clone the repository:
 ```bash
-git clone [repository-url]
-cd transfer-interference-project
-```
+git clone https://github.com/eleanorholton/transfer-interference.git
+cd transfer-interference
+
 
 2. Create and activate a virtual environment (recommended):
 ```bash
