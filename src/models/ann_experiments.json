@@ -1,0 +1,44 @@
+{
+    "conditions": [
+        {
+            "name": "rich_10",
+            "gamma": 1e-3,
+            "dim_hidden": 10
+        },
+        {
+            "name": "rich_50",
+            "gamma": 1e-3,
+            "dim_hidden": 50
+        },
+        {
+            "name": "rich_200",
+            "gamma": 1e-3,
+            "dim_hidden": 200
+        },
+        {
+            "name": "gamma_e_2_50",
+            "gamma": 1e-3,
+            "dim_hidden": 50
+        },
+        {
+            "name": "gamma_e_1_50",
+            "gamma": 1e-1,
+            "dim_hidden": 50
+        },
+        {
+            "name": "gamma_1_50",
+            "gamma": 1,
+            "dim_hidden": 50
+        },
+        {
+            "name": "lazy_50",
+            "gamma": 2,
+            "dim_hidden": 50
+        }
+    ],
+    "n_epochs": 100,
+    "n_phase": 3,
+    "learning_rate": 0.01,
+    "shuffle": false,
+    "batch_size": 1
+}
