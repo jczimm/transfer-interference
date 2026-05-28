@@ -11,6 +11,72 @@
             "dim_hidden": 50
         },
         {
+            "name": "rich_50_1",
+            "gamma": 1e-3,
+            "dim_hidden": 50,
+            "near_rule_sixths": 1
+        },
+        {
+            "name": "rich_50_2",
+            "gamma": 1e-3,
+            "dim_hidden": 50,
+            "near_rule_sixths": 2
+        },
+        {
+            "name": "rich_50_3",
+            "gamma": 1e-3,
+            "dim_hidden": 50,
+            "near_rule_sixths": 3
+        },
+        {
+            "name": "rich_50_4",
+            "gamma": 1e-3,
+            "dim_hidden": 50,
+            "near_rule_sixths": 4
+        },
+        {
+            "name": "rich_50_5",
+            "gamma": 1e-3,
+            "dim_hidden": 50,
+            "near_rule_sixths": 5
+        },
+        {
+            "name": "rich_50_6",
+            "gamma": 1e-3,
+            "dim_hidden": 50,
+            "near_rule_sixths": 6
+        },
+        {
+            "name": "rich_50_7",
+            "gamma": 1e-3,
+            "dim_hidden": 50,
+            "near_rule_sixths": 7
+        },
+        {
+            "name": "rich_50_8",
+            "gamma": 1e-3,
+            "dim_hidden": 50,
+            "near_rule_sixths": 9
+        },
+        {
+            "name": "rich_50_9",
+            "gamma": 1e-3,
+            "dim_hidden": 50,
+            "near_rule_sixths": 9
+        },
+        {
+            "name": "rich_50_10",
+            "gamma": 1e-3,
+            "dim_hidden": 50,
+            "near_rule_sixths": 10
+        },
+        {
+            "name": "rich_50_11",
+            "gamma": 1e-3,
+            "dim_hidden": 50,
+            "near_rule_sixths": 11
+        },
+        {
             "name": "rich_200",
             "gamma": 1e-3,
             "dim_hidden": 200
@@ -34,6 +100,72 @@
             "name": "lazy_50",
             "gamma": 2,
             "dim_hidden": 50
+        },
+        {
+            "name": "lazy_50_1",
+            "gamma": 2,
+            "dim_hidden": 50,
+            "near_rule_sixths": 1
+        },
+        {
+            "name": "lazy_50_2",
+            "gamma": 2,
+            "dim_hidden": 50,
+            "near_rule_sixths": 2
+        },
+        {
+            "name": "lazy_50_3",
+            "gamma": 2,
+            "dim_hidden": 50,
+            "near_rule_sixths": 3
+        },
+        {
+            "name": "lazy_50_4",
+            "gamma": 2,
+            "dim_hidden": 50,
+            "near_rule_sixths": 4
+        },
+        {
+            "name": "lazy_50_5",
+            "gamma": 2,
+            "dim_hidden": 50,
+            "near_rule_sixths": 5
+        },
+        {
+            "name": "lazy_50_6",
+            "gamma": 2,
+            "dim_hidden": 50,
+            "near_rule_sixths": 6
+        },
+        {
+            "name": "lazy_50_7",
+            "gamma": 2,
+            "dim_hidden": 50,
+            "near_rule_sixths": 7
+        },
+        {
+            "name": "lazy_50_8",
+            "gamma": 2,
+            "dim_hidden": 50,
+            "near_rule_sixths": 9
+        },
+        {
+            "name": "lazy_50_9",
+            "gamma": 2,
+            "dim_hidden": 50,
+            "near_rule_sixths": 9
+        },
+        {
+            "name": "lazy_50_10",
+            "gamma": 2,
+            "dim_hidden": 50,
+            "near_rule_sixths": 10
+        },
+        {
+            "name": "lazy_50_11",
+            "gamma": 2,
+            "dim_hidden": 50,
+            "near_rule_sixths": 11
         }
     ],
     "n_epochs": 100,

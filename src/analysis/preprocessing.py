@@ -103,8 +103,9 @@ def add_test_stim(df):
 
     return df
 
-def add_regressors(df):
-    """Add additional regressors to dataframe."""
+# TODO: remove now-unused error_sds functionality; was an incorrect solution!
+def add_regressors(df, error_sds=(5,5)):
+    """Add additional regressors to dataframe. error_sds is in degrees"""
     # Add 'A_rule' and 'B_rule' columns
     df_groupstim = df.groupby(['participant', 'stimID', 'feature_idx', 'task_section'])[['noisy_feedback_value','feat_val']].mean().reset_index()
 
@@ -121,10 +122,55 @@ def add_regressors(df):
         df.loc[df['participant'] == p, 'B_rule'] = b_rule
 
     # Calculate 'rule_applied' using vectorized operations
+    # JZ: this is the error signal, I'm pretty sure
     rule_applied = df.loc[df['feature_idx'] == 1, 'dial_resp'].values \
                    - df.loc[df['feature_idx'] == 0, 'noisy_feedback_value'].values
     rule_applied = (rule_applied + np.pi) % (2 * np.pi) - np.pi  # Wrap to [-pi, pi]
     df.loc[df['feature_idx'] == 1, 'rule_applied'] = rule_applied
+
+    # NOW: we scale noise for A_rule and scale noise for B_rule, and overwrite 'rule_applied' (btw, breaks compatibility with modeling participant data)
+    # error signal = response - feedback
+    # error signal = response - (true value + noise)
+    # rule_applied = dial_resp - (feat_val + noise)
+    # rule_applied = dial_resp - noisy_feedback_value
+    # noisy_feedback_value = feat_val + noise
+    # noisy_feedback_value - feat_val = noise
+    # rule_applied = dial_resp - (feat_val + (noisy_feedback_value - feat_val))
+    # so to scale the noise by NOISE_SCALE:
+    # rule_applied = dial_resp - (feat_val + NOISE_SCALE*(noisy_feedback_value - feat_val))
+
+    A_errors = df.loc[(df['feature_idx'] == 0) & (df['taskID'] == 0), 'noisy_feedback_value'].values \
+            - (df.loc[(df['feature_idx'] == 0) & (df['taskID'] == 0), 'feat_val'].values)
+    A_errors = (A_errors + np.pi) % (2 * np.pi) - np.pi # wrap to [-pi, pi]
+
+    B_errors = df.loc[(df['feature_idx'] == 0) & (df['taskID'] == 1), 'noisy_feedback_value'].values \
+            - (df.loc[(df['feature_idx'] == 0) & (df['taskID'] == 1), 'feat_val'].values)
+    B_errors = (B_errors + np.pi) % (2 * np.pi) - np.pi # wrap to [-pi, pi]
+    
+    # now scale the errors differently for each task
+
+    A_ERROR_SD, B_ERROR_SD = error_sds
+    A_ERROR_SCALE = A_ERROR_SD / 5. # default sd is 5 degrees
+    B_ERROR_SCALE = B_ERROR_SD / 5. # default sd in 5 degrees
+
+    A_rule_applied = df.loc[(df['feature_idx'] == 1) & (df['taskID'] == 0), 'dial_resp'].values \
+                   - (df.loc[(df['feature_idx'] == 0) & (df['taskID'] == 0), 'feat_val'].values \
+                   + A_errors * A_ERROR_SCALE)
+
+    B_rule_applied = df.loc[(df['feature_idx'] == 1) & (df['taskID'] == 1), 'dial_resp'].values \
+                   - (df.loc[(df['feature_idx'] == 0) & (df['taskID'] == 1), 'feat_val'].values \
+                   + B_errors * B_ERROR_SCALE)
+
+    A_rule_applied = (A_rule_applied + np.pi) % (2 * np.pi) - np.pi  # Wrap to [-pi, pi]
+    B_rule_applied = (B_rule_applied + np.pi) % (2 * np.pi) - np.pi  # Wrap to [-pi, pi]
+    
+    
+    df.loc[(df['feature_idx'] == 1) & (df['taskID'] == 0), 'rule_applied'] = 0 # A_rule_applied
+    df.loc[(df['feature_idx'] == 1) & (df['taskID'] == 1), 'rule_applied'] = 0 # B_rule_applied
+
+    # from matplotlib import pyplot as plt
+    # plt.hist(errors)
+    # plt.show()
 
     # Add test stim columns
     df = add_test_stim(df)

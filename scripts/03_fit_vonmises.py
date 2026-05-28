@@ -145,6 +145,7 @@ def run_analysis(data_type, sim_name=None, base_folder='./'):
     
     if data_type == 'participants':
         # Load and fit participant data
+        # TODO if using this file, change to the specific trial_df for the given error scale for A and B
         participant_data = pd.read_csv(os.path.join(data_folder, 'participants', 'trial_df.csv'))
         grouped_df = fit_human_data(participant_data)
         output_path = os.path.join(data_folder, 'participants', 'human_vonmises_fits.csv')

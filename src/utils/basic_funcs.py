@@ -16,9 +16,14 @@ def set_seed(seed):
 
 
 
-def get_datasets(df, participant, task_parameters):
+def get_datasets(df, participant, task_parameters, a_error_sd=0, b_error_sd=0):
     """
     Main function to get datasets and process raw inputs and labels.
+
+    a_error_sd, b_error_sd: SD (in degrees) of per-trial Gaussian noise added to
+    feat_val before it becomes the network's (cos, sin) training target. A applies
+    to the A1/A2 phases, B applies to the B phase. The raw_labels (used for ordering
+    and geometry) stay noise-free.
     """
     # Filter data for each task section
     participant_training_A1 = filter_participant_data(df, participant, 'A1')
@@ -44,12 +49,24 @@ def get_datasets(df, participant, task_parameters):
     raw_inputs[1], raw_labels[1] = process_raw_inputs_and_labels(participant_training_B, task_parameters['nStim_perTask'], 1)
     raw_inputs[2], raw_labels[2] = process_raw_inputs_and_labels(participant_training_A2, task_parameters['nStim_perTask'], 2)
 
-    # Assemble datasets
-    dataset_A1 = assemble_dataset(participant_training_A1, A1_inputs, np.cos(participant_training_A1['feat_val'].values), np.sin(participant_training_A1['feat_val'].values))
-    dataset_B = assemble_dataset(participant_training_B, B_inputs, np.cos(participant_training_B['feat_val'].values), np.sin(participant_training_B['feat_val'].values))
-    dataset_A2 = assemble_dataset(participant_training_A2, A2_inputs, np.cos(participant_training_A2['feat_val'].values), np.sin(participant_training_A2['feat_val'].values))
+    # Assemble datasets, adding per-trial Gaussian noise to the feat_val targets
+    A1_feat = add_feat_noise(participant_training_A1['feat_val'].values, a_error_sd)
+    B_feat = add_feat_noise(participant_training_B['feat_val'].values, b_error_sd)
+    A2_feat = add_feat_noise(participant_training_A2['feat_val'].values, a_error_sd)
+
+    dataset_A1 = assemble_dataset(participant_training_A1, A1_inputs, np.cos(A1_feat), np.sin(A1_feat))
+    dataset_B = assemble_dataset(participant_training_B, B_inputs, np.cos(B_feat), np.sin(B_feat))
+    dataset_A2 = assemble_dataset(participant_training_A2, A2_inputs, np.cos(A2_feat), np.sin(A2_feat))
 
     return dataset_A1, dataset_B, dataset_A2, raw_inputs, raw_labels
+
+
+def add_feat_noise(feat_val, error_sd):
+    """Add per-trial Gaussian noise (SD in degrees) to feat_val angles in radians."""
+    if not error_sd:
+        return feat_val
+    noise = np.random.normal(0.0, np.deg2rad(error_sd), size=feat_val.shape)
+    return feat_val + noise
 
 
 def filter_participant_data(df, participant, task_section):

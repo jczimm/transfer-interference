@@ -94,7 +94,7 @@ def ordered_sweep(network, ranked_inputs):
     preds, hids = network(ranked_inputs)
     return preds.detach().numpy().copy(), hids.detach().numpy().copy()
 
-def run_simulation(training_params, network_params, task_parameters, df, do_test, dosave=0, sim_folder=np.nan):
+def run_simulation(training_params, network_params, task_parameters, df, do_test, dosave=0, sim_folder=np.nan, a_error_sd=0, b_error_sd=0):
     """Run neural network simulation for participant learning.
     
     1. Initializes network and loads participant data
@@ -120,11 +120,11 @@ def run_simulation(training_params, network_params, task_parameters, df, do_test
     results = []
     
     # Train network for each participant
-    for idx_p, participant in tqdm(enumerate(participants)):
+    for idx_p, participant in tqdm(enumerate(participants), total=len(participants)):
         print(f'Starting participant {participant}')
         
         # Get participant data
-        dataset_A1, dataset_B, dataset_A2, raw_inputs, raw_labels = basic.get_datasets(df, participant, task_parameters)
+        dataset_A1, dataset_B, dataset_A2, raw_inputs, raw_labels = basic.get_datasets(df, participant, task_parameters, a_error_sd, b_error_sd)
 
         # Order inputs by feature
         A_inputs = raw_inputs[0]

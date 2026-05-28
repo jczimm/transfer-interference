@@ -13,6 +13,7 @@ import numpy as np
 from src.utils.basic_funcs import set_seed
 from src.models import neural_network as net
 from src.analysis import ann as ann
+from pathlib import Path
 
 
 def load_settings(config_path):
@@ -21,6 +22,12 @@ def load_settings(config_path):
         return json.load(f)
 
 
+#####
+A_error_sd = int(0)
+B_error_sd = int(0)
+#####
+
+simulations_folder = Path(f'simulations_A-{A_error_sd}_B-{B_error_sd}')
 
 def run_experiment(condition_name, base_folder='./'):
     """
@@ -30,6 +37,7 @@ def run_experiment(condition_name, base_folder='./'):
     set_seed(2024)
     
     # Setup paths
+    # data_folder = os.path.join(base_folder, f'data_A-{A_error_sd}_B-{B_error_sd}')
     data_folder = os.path.join(base_folder, 'data')
     config_path = os.path.join(base_folder, 'src', 'models', 'ann_experiments.json')
     
@@ -42,6 +50,10 @@ def run_experiment(condition_name, base_folder='./'):
     # Load participant data
     df = ann.load_participant_data(data_folder)
     participants = df['participant'].unique()
+
+    # Let's sample a fixed subset of them for now!
+    np.random.seed(67)
+    participants = np.random.choice(participants, 20, replace=False)
     
     # Setup parameters
     task_parameters = ann.setup_task_parameters()
@@ -65,7 +77,7 @@ def run_experiment(condition_name, base_folder='./'):
     ]
     
     # Setup simulation folder
-    sim_folder = os.path.join(data_folder, 'simulations', condition_name)
+    sim_folder = os.path.join(data_folder, simulations_folder, condition_name)
     os.makedirs(sim_folder, exist_ok=True)
     
     # Save settings
@@ -80,6 +92,8 @@ def run_experiment(condition_name, base_folder='./'):
             "batch_size": settings['batch_size'],
             "gamma": condition['gamma'],
             "lr": settings['learning_rate'],
+            "a_error_sd": A_error_sd,
+            "b_error_sd": B_error_sd,
         },
         "network_params": network_params,
         "task_parameters": task_parameters
@@ -97,13 +111,15 @@ def run_experiment(condition_name, base_folder='./'):
     
     # Run simulation
     net.run_simulation(
-        training_params,  
+        training_params,
         network_params,
         task_parameters,
         df,
         do_test=1,
         dosave=1,
-        sim_folder=sim_folder
+        sim_folder=sim_folder,
+        a_error_sd=A_error_sd,
+        b_error_sd=B_error_sd
     )
 
 
@@ -122,6 +138,7 @@ def run_geometry_experiment(condition_name, participant_to_copy='study1_same_sub
         Base project folder path
     """
     # Setup paths and load settings
+    # data_folder = os.path.join(base_folder, f'data_A-{A_error_sd}_B-{B_error_sd}')
     data_folder = os.path.join(base_folder, 'data')
     config_path = os.path.join(base_folder, 'src', 'models', 'ann_experiments.json')
     
@@ -152,12 +169,14 @@ def run_geometry_experiment(condition_name, participant_to_copy='study1_same_sub
         condition['gamma'],
         settings['learning_rate']
     ]
+
+    near_rule_sixths = condition['near_rule_sixths'] if 'near_rule_sixths' in condition else 1
     
     # Generate geometry DataFrame
     geometry_df = ann.generate_geometry_df(
         df, 
         participant_to_copy, 
-        near_rule=np.pi/6, 
+        near_rule=near_rule_sixths*np.pi/6, 
         far_rule=np.pi
     )
     
@@ -174,7 +193,7 @@ def run_geometry_experiment(condition_name, participant_to_copy='study1_same_sub
     )
     
     # Save results
-    output_path = os.path.join(data_folder, 'simulations', f'geom_results_{condition_name}.npz')
+    output_path = os.path.join(data_folder, simulations_folder, f'geom_results_{condition_name}.npz')
     np.savez_compressed(output_path, **geom_results)
     print(f"Results saved to {output_path}")
 
