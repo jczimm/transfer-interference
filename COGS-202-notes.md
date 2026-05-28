@@ -13,3 +13,7 @@ Then:
 
 TODO: Use all 305 subjects instead of just randomly sampled 20
 And see any other TODOs in source
+
+~~TODO: modify `figure4_individual_differences.ipynb` to be able to accept different simulations folders (for different added noise during A and B)~~
+
+TODO time to minimum loss as a function of both noise added to loss function during task A vs during task B
