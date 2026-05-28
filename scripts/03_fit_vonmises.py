@@ -145,7 +145,6 @@ def run_analysis(data_type, sim_name=None, base_folder='./'):
     
     if data_type == 'participants':
         # Load and fit participant data
-        # TODO if using this file, change to the specific trial_df for the given error scale for A and B
         participant_data = pd.read_csv(os.path.join(data_folder, 'participants', 'trial_df.csv'))
         grouped_df = fit_human_data(participant_data)
         output_path = os.path.join(data_folder, 'participants', 'human_vonmises_fits.csv')
@@ -154,6 +153,7 @@ def run_analysis(data_type, sim_name=None, base_folder='./'):
         if not sim_name:
             raise ValueError("Simulation name must be provided for simulation data")
         # Load and fit simulation data
+        # TODO: use simulations folder based on A_error_sd and B_error_sd
         ann_data = ann.load_ann_data(os.path.join(data_folder, 'simulations', sim_name))
         grouped_df = fit_ann_data(ann_data)
         output_path = os.path.join(data_folder, 'simulations', f'{sim_name}_vonmises_fits.csv')

@@ -10,3 +10,6 @@ Then:
 2. `uv run scripts/02_run_simulations.py rich_50` (first, update A_error_sd and B_error_sd in that script)
 3. `uv run scripts/02_run_simulations.py lazy_50` (first, update A_error_sd and B_error_sd in that script)
 4. `notebooks/figure2_transfer_interference.ipynb` / `notebooks/figure3_anns.ipynb` / `notebooks/figure4_individual_differences.ipynb`
+
+TODO: Use all 305 subjects instead of just randomly sampled 20
+And see any other TODOs in source

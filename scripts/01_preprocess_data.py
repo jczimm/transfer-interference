@@ -13,11 +13,6 @@ from src.analysis.preprocessing import (
 )
 from src.utils.basic_funcs import set_seed
 
-# ####
-# A_error_sd = int(5)
-# B_error_sd = int(25)
-# ####
-
 def main():
     # Set constants
     SEED = 2024
@@ -25,7 +20,6 @@ def main():
     
     # Define paths
     DATA_FOLDER = 'data/participants/raw'
-    # OUTPUT_PATH = f'data_A-{A_error_sd}_B-{B_error_sd}/participants/trial_df.csv'
     OUTPUT_PATH = 'data/participants/trial_df.csv'
     
     # Define batches
@@ -44,7 +38,7 @@ def main():
     
     # Add regressors and test trial information
     print("Adding regressors and test trial information (and scaling error signal for each task)...")
-    df = add_regressors(df) # , error_sds=(A_error_sd, B_error_sd))
+    df = add_regressors(df)
     
     # Apply exclusions
     print("Applying exclusion criteria...")

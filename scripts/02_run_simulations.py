@@ -37,7 +37,6 @@ def run_experiment(condition_name, base_folder='./'):
     set_seed(2024)
     
     # Setup paths
-    # data_folder = os.path.join(base_folder, f'data_A-{A_error_sd}_B-{B_error_sd}')
     data_folder = os.path.join(base_folder, 'data')
     config_path = os.path.join(base_folder, 'src', 'models', 'ann_experiments.json')
     
