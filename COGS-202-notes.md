@@ -7,13 +7,20 @@ To install, did `uv init -p 3.10` then `uv add -r requirements.txt` and `uv sync
 Then:
 
 1. `uv run scripts/01_preprocess_data.py`
+
+OLD:
+
 2. `uv run scripts/02_run_simulations.py rich_50` (first, update A_error_sd and B_error_sd in that script)
 3. `uv run scripts/02_run_simulations.py lazy_50` (first, update A_error_sd and B_error_sd in that script)
 4. `notebooks/figure2_transfer_interference.ipynb` / `notebooks/figure3_anns.ipynb` / `notebooks/figure4_individual_differences.ipynb`
 
-TODO: Use all 305 subjects instead of just randomly sampled 20
+NEW:
+
+1. `uv run scripts/04_sweep_cogs202.py --jobs 10`
+
+- [x] Use all 305 subjects instead of just randomly sampled 20
 And see any other TODOs in source
 
 ~~TODO: modify `figure4_individual_differences.ipynb` to be able to accept different simulations folders (for different added noise during A and B)~~
 
-TODO time to minimum loss as a function of both noise added to loss function during task A vs during task B
+- [x] time to minimum loss as a function of noise added to loss function during task A and during task B (2x2)

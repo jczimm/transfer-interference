@@ -456,6 +456,44 @@ def plot_id_1group(data, grouping, group_order, group_names, var, yticks, ytick_
     
     return fig, ax
 
+def plot_interference_by_noise(data, noise_order, regime_order=('rich', 'lazy'),
+                               colors=None, var='interference',
+                               ylabel='Retest interference\n$\\it{p}$(Rule B)',
+                               ylim=(0, 1.1), yticks=np.arange(0, 1.1, 0.5),
+                               figsize=[6 / 2.54, 4.5 / 2.54]):
+    """Plot an ANN metric (default retest interference) for each regime across
+    noise conditions: x = noise level, one line per regime, mean +/- SE with the
+    individual networks shown as faint jittered points.
+
+    `data` is the long DataFrame from ann.build_ann_interference_df (columns
+    'group', 'noise', and `var`).
+    """
+    if colors is None:
+        colors = ['#4C72B0', '#DD8452']  # rich, lazy
+    palette = dict(zip(regime_order, colors))
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    # Individual networks (faint)
+    sns.stripplot(data=data, x='noise', y=var, hue='group', order=noise_order,
+                  hue_order=regime_order, palette=palette, dodge=True,
+                  alpha=0.25, size=2.5, linewidth=0, jitter=True, legend=False, ax=ax)
+
+    # Group means +/- SE, connected across noise levels
+    sns.pointplot(data=data, x='noise', y=var, hue='group', order=noise_order,
+                  hue_order=regime_order, palette=palette, errorbar='se',
+                  markers='o', markersize=3.5, linewidth=1, dodge=0.3, ax=ax)
+
+    _style_axes(ax)
+    ax.set_xlabel('noise (A/B SD, deg)')
+    ax.set_ylabel(ylabel)
+    ax.set_ylim(ylim)
+    ax.set_yticks(yticks, yticks)
+    ax.legend(frameon=False, fontsize=6, title=None)
+
+    return fig, ax
+
+
 def plot_id_groups(data, grouping, group_order, group_names, var, yticks, ytick_labs, ylim, ylab, colors='grey', add_tests=0, p_value=np.nan, y_coord=np.nan,figsize=[6 / 2.54, 4.5 / 2.54]):
     """Plot individual differences comparing multiple groups with error bars and connecting lines."""
     fig, ax = plt.subplots(figsize=figsize)

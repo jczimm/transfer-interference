@@ -22,17 +22,14 @@ def load_settings(config_path):
         return json.load(f)
 
 
-#####
-A_error_sd = int(0)
-B_error_sd = int(0)
-#####
-
-simulations_folder = Path(f'simulations_A-{A_error_sd}_B-{B_error_sd}')
-
-def run_experiment(condition_name, base_folder='./'):
+def run_experiment(condition_name, base_folder='./', a_error_sd=0, b_error_sd=0):
     """
     Run a single experiment condition.
     """
+    a_error_sd = int(a_error_sd)
+    b_error_sd = int(b_error_sd)
+    simulations_folder = Path(f'simulations_A-{a_error_sd}_B-{b_error_sd}')
+
     # Set random seed
     set_seed(2024)
     
@@ -50,9 +47,9 @@ def run_experiment(condition_name, base_folder='./'):
     df = ann.load_participant_data(data_folder)
     participants = df['participant'].unique()
 
-    # Let's sample a fixed subset of them for now!
-    np.random.seed(67)
-    participants = np.random.choice(participants, 20, replace=False)
+    # # Let's sample a fixed subset of them for now!
+    # np.random.seed(67)
+    # participants = np.random.choice(participants, 20, replace=False)
     
     # Setup parameters
     task_parameters = ann.setup_task_parameters()
@@ -91,8 +88,8 @@ def run_experiment(condition_name, base_folder='./'):
             "batch_size": settings['batch_size'],
             "gamma": condition['gamma'],
             "lr": settings['learning_rate'],
-            "a_error_sd": A_error_sd,
-            "b_error_sd": B_error_sd,
+            "a_error_sd": a_error_sd,
+            "b_error_sd": b_error_sd,
         },
         "network_params": network_params,
         "task_parameters": task_parameters
@@ -117,13 +114,13 @@ def run_experiment(condition_name, base_folder='./'):
         do_test=1,
         dosave=1,
         sim_folder=sim_folder,
-        a_error_sd=A_error_sd,
-        b_error_sd=B_error_sd
+        a_error_sd=a_error_sd,
+        b_error_sd=b_error_sd
     )
 
 
 
-def run_geometry_experiment(condition_name, participant_to_copy='study1_same_sub20', base_folder='./'):
+def run_geometry_experiment(condition_name, participant_to_copy='study1_same_sub20', base_folder='./', a_error_sd=0, b_error_sd=0):
     """
     Run geometry visualization experiment with matched A training.
     
@@ -192,6 +189,7 @@ def run_geometry_experiment(condition_name, participant_to_copy='study1_same_sub
     )
     
     # Save results
+    simulations_folder = Path(f'simulations_A-{int(a_error_sd)}_B-{int(b_error_sd)}')
     output_path = os.path.join(data_folder, simulations_folder, f'geom_results_{condition_name}.npz')
     np.savez_compressed(output_path, **geom_results)
     print(f"Results saved to {output_path}")
@@ -207,13 +205,19 @@ def main():
                        help='Run geometry visualization experiment')
     parser.add_argument('--participant', type=str, default='study1_same_sub20',
                        help='Participant ID for geometry experiment')
-    
+    parser.add_argument('--a-error-sd', type=int, default=0,
+                       help='Task A target noise SD in degrees (default: 0)')
+    parser.add_argument('--b-error-sd', type=int, default=0,
+                       help='Task B target noise SD in degrees (default: 0)')
+
     args = parser.parse_args()
-    
+
     if args.geometry:
-        run_geometry_experiment(args.condition, args.participant, args.base_folder)
+        run_geometry_experiment(args.condition, args.participant, args.base_folder,
+                                a_error_sd=args.a_error_sd, b_error_sd=args.b_error_sd)
     else:
-        run_experiment(args.condition, args.base_folder)
+        run_experiment(args.condition, args.base_folder,
+                       a_error_sd=args.a_error_sd, b_error_sd=args.b_error_sd)
 
 if __name__ == "__main__":
     main()

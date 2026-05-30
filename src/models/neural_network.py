@@ -94,7 +94,7 @@ def ordered_sweep(network, ranked_inputs):
     preds, hids = network(ranked_inputs)
     return preds.detach().numpy().copy(), hids.detach().numpy().copy()
 
-def run_simulation(training_params, network_params, task_parameters, df, do_test, dosave=0, sim_folder=np.nan, a_error_sd=0, b_error_sd=0):
+def run_simulation(training_params, network_params, task_parameters, df, do_test, dosave=0, sim_folder=np.nan, a_error_sd=0, b_error_sd=0, seed_base=2024):
     """Run neural network simulation for participant learning.
     
     1. Initializes network and loads participant data
@@ -114,49 +114,71 @@ def run_simulation(training_params, network_params, task_parameters, df, do_test
         List of results per participant
     """
     # Unpack parameters
-    dim_input, dim_hidden, dim_output = network_params
-    participants, n_phase, n_epochs, n_train_trials, shuffle, batch_size, gamma, lr = training_params
-    
+    participants = training_params[0]
+
     results = []
-    
+
     # Train network for each participant
     for idx_p, participant in tqdm(enumerate(participants), total=len(participants)):
         print(f'Starting participant {participant}')
-        
-        # Get participant data
-        dataset_A1, dataset_B, dataset_A2, raw_inputs, raw_labels = basic.get_datasets(df, participant, task_parameters, a_error_sd, b_error_sd)
 
-        # Order inputs by feature
-        A_inputs = raw_inputs[0]
-        B_inputs = raw_inputs[1] 
-        A_labels_feat1 = raw_labels[0, 0:2].T
-        B_labels_feat1 = raw_labels[1, 0:2].T
-        ordered_indices_A = basic.get_clockwise_order(A_labels_feat1)
-        ordered_indices_B = basic.get_clockwise_order(B_labels_feat1)
-        ordered_inputs = np.concatenate((A_inputs[ordered_indices_A], B_inputs[ordered_indices_B]), axis=0)
-
-        # Create data loaders
-        trainloader_A1 = DataLoader(CreateParticipantDataset(dataset_A1), batch_size=batch_size, shuffle=shuffle)
-        trainloader_B = DataLoader(CreateParticipantDataset(dataset_B), batch_size=batch_size, shuffle=shuffle)
-        trainloader_A2 = DataLoader(CreateParticipantDataset(dataset_A2), batch_size=batch_size, shuffle=shuffle)
-
-        # Train network through phases A1 -> B -> A2
-        participant_results = runSchedule(
-            train_participant_schedule, lr, gamma, n_epochs, dim_input, dim_hidden,
-            dim_output, trainloader_A1, trainloader_B, trainloader_A2, ordered_inputs, do_test
+        participant_results = train_one_participant(
+            participant, df, task_parameters, network_params, training_params,
+            do_test, a_error_sd=a_error_sd, b_error_sd=b_error_sd,
+            seed=None if seed_base is None else seed_base + idx_p,
         )
 
-        participant_results['participant'] = participant
-        
         # Save results if requested
         if dosave:
             file_path = f"{sim_folder}/sim_{participant}.npz"
             np.savez_compressed(file_path, **participant_results)
-        
+
         # Cleanup
         del participant_results
 
     return results
+
+
+def train_one_participant(participant, df, task_parameters, network_params, training_params,
+                          do_test, a_error_sd=0, b_error_sd=0, seed=None):
+    """Train a single participant through the A1 -> B -> A2 schedule.
+
+    Independent of every other participant, so this is the unit of parallelism
+    for sweeps. `seed`, when given, is set before data generation (noise) and
+    weight init so each participant is reproducible regardless of run order.
+    """
+    if seed is not None:
+        basic.set_seed(seed)
+
+    dim_input, dim_hidden, dim_output = network_params
+    _, n_phase, n_epochs, n_train_trials, shuffle, batch_size, gamma, lr = training_params
+
+    # Get participant data
+    dataset_A1, dataset_B, dataset_A2, raw_inputs, raw_labels = basic.get_datasets(
+        df, participant, task_parameters, a_error_sd, b_error_sd)
+
+    # Order inputs by feature
+    A_inputs = raw_inputs[0]
+    B_inputs = raw_inputs[1]
+    A_labels_feat1 = raw_labels[0, 0:2].T
+    B_labels_feat1 = raw_labels[1, 0:2].T
+    ordered_indices_A = basic.get_clockwise_order(A_labels_feat1)
+    ordered_indices_B = basic.get_clockwise_order(B_labels_feat1)
+    ordered_inputs = np.concatenate((A_inputs[ordered_indices_A], B_inputs[ordered_indices_B]), axis=0)
+
+    # Create data loaders
+    trainloader_A1 = DataLoader(CreateParticipantDataset(dataset_A1), batch_size=batch_size, shuffle=shuffle)
+    trainloader_B = DataLoader(CreateParticipantDataset(dataset_B), batch_size=batch_size, shuffle=shuffle)
+    trainloader_A2 = DataLoader(CreateParticipantDataset(dataset_A2), batch_size=batch_size, shuffle=shuffle)
+
+    # Train network through phases A1 -> B -> A2
+    participant_results = runSchedule(
+        train_participant_schedule, lr, gamma, n_epochs, dim_input, dim_hidden,
+        dim_output, trainloader_A1, trainloader_B, trainloader_A2, ordered_inputs, do_test
+    )
+
+    participant_results['participant'] = participant
+    return participant_results
 
 def runSchedule(train_function, lr, gamma, n_epochs, dim_input, dim_hidden, dim_output, trainloader_A1, trainloader_B, trainloader_A2, ordered_inputs, do_test):
     """

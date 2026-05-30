@@ -26,7 +26,9 @@ def load_ann_data(ann_folder):
 
     # Loop through files in the simulation folder
     for file_name in os.listdir(ann_folder):
-        if not file_name.endswith('.npz'):
+        # Skip dotfiles: the atomic-save path in 02/04 writes partial archives as
+        # `.sim_*.tmp.npz`, which would otherwise be read mid-write (BadZipFile).
+        if file_name.startswith('.') or not file_name.endswith('.npz'):
             continue
             
         file_path = os.path.join(ann_folder, file_name)
@@ -208,10 +210,112 @@ def analyze_training_loss(ann_data, save_path=None):
         
         results[schedule_name] = {
             'mean': np.nanmean(sched_losses, axis=0)[1::2],
-            'std': np.nanstd(sched_losses, axis=0)[1::2]
+            'std': np.nanstd(sched_losses, axis=0)[1::2],
+            'losses': sched_losses
         }
     
     return results
+
+
+def rolling_average(data, window_size):
+    """Causal rolling average (mode='valid', so no future signal leaks in)."""
+    weights = np.ones(window_size) / window_size
+    return np.convolve(data, weights, mode='valid')
+
+
+def mean_loss_curve(ann_data, condition):
+    """Mean loss curve across participants for one schedule, downsampled to the
+    summer responses (matches analyze_training_loss(...)[condition]['mean']).
+
+    Computed for a single condition so it works even when the other schedules
+    have no participants (e.g. a near-only sweep)."""
+    schedule_data = ann_data[condition]
+    if not schedule_data:
+        raise ValueError(f"No '{condition}' participants found in ann_data")
+    flattened_length = schedule_data[0]['losses'].shape[0] * schedule_data[0]['losses'].shape[1]
+    sched_losses = np.zeros((len(schedule_data), flattened_length))
+    for subj in range(len(schedule_data)):
+        sched_losses[subj, :] = np.concatenate(schedule_data[subj]['losses'], axis=0)
+    return np.nanmean(sched_losses, axis=0)[1::2]
+
+
+def participant_loss_curve(participant_record):
+    """Downsampled loss curve for a single participant (same downsampling as
+    mean_loss_curve, but without averaging across participants)."""
+    return np.concatenate(participant_record['losses'], axis=0)[1::2]
+
+
+def compute_loss_time_to_pct(ann_data, condition='near', b_slice=(6000, 12000),
+                             window_size=60, pct=5, tol=1e-3):
+    """Timestep at which the smoothed Task-B loss for `condition` first comes
+    within `tol` of its `pct`-th percentile. Returns int t.
+
+    `b_slice` indexes into the downsampled mean loss curve, so (6000, 12000) is
+    the Task-B segment.
+    """
+    smooth = rolling_average(mean_loss_curve(ann_data, condition)[b_slice[0]:b_slice[1]], window_size)
+    p = np.percentile(smooth, pct)
+    return int(np.argmax(np.abs(smooth - p) < tol))
+
+
+def compute_loss_auc(ann_data, condition='near', learn_slice=(0, 6000),
+                     transfer_slice=(6000, 12000), ref_slice=(12000, None),
+                     window_size=60):
+    """Area-under-curve learning and transfer metrics for `condition`.
+
+    The smoothed mean loss curve is referenced against `ref_val`, the peak
+    smoothed loss over the Task-A2 segment (`ref_slice`):
+      - learn_auc:    area below ref_val during Task A1 (drop from the
+                      post-transfer baseline -> how much was learned).
+      - transfer_auc: area above ref_val during Task B (interference cost ->
+                      how far loss rose above baseline while transferring).
+
+    The curve is smoothed once and then sliced (matching figure3_anns.ipynb),
+    so the slice indices are in smoothed-curve coordinates.
+    """
+    smooth = rolling_average(mean_loss_curve(ann_data, condition), window_size)
+
+    ref_val = np.max(smooth[ref_slice[0]:ref_slice[1]])
+
+    learn = smooth[learn_slice[0]:learn_slice[1]]
+    learn_auc = float(np.trapezoid(-learn[learn <= ref_val] + ref_val))
+
+    transfer = smooth[transfer_slice[0]:transfer_slice[1]]
+    transfer_auc = float(np.trapezoid(transfer[transfer >= ref_val] - ref_val))
+
+    return learn_auc, transfer_auc
+
+
+def compute_loss_metrics_per_participant(ann_data, condition='near',
+                                         b_slice=(6000, 12000),
+                                         learn_slice=(0, 6000),
+                                         transfer_slice=(6000, 12000),
+                                         ref_slice=(12000, None),
+                                         window_size=60, pct=5, tol=1e-3):
+    """Per-participant t / learn_auc / transfer_auc for `condition`.
+
+    Same definitions as compute_loss_time_to_pct / compute_loss_auc, but applied
+    to each participant's own loss curve instead of the across-participant mean.
+    Returns a list of dicts: {participant, t, learn_auc, transfer_auc}.
+    """
+    rows = []
+    for rec in ann_data[condition]:
+        curve = participant_loss_curve(rec)
+
+        b_smooth = rolling_average(curve[b_slice[0]:b_slice[1]], window_size)
+        p = np.percentile(b_smooth, pct)
+        t = int(np.argmax(np.abs(b_smooth - p) < tol))
+
+        smooth = rolling_average(curve, window_size)
+        ref_val = np.max(smooth[ref_slice[0]:ref_slice[1]])
+        learn = smooth[learn_slice[0]:learn_slice[1]]
+        learn_auc = float(np.trapezoid(-learn[learn <= ref_val] + ref_val))
+        transfer = smooth[transfer_slice[0]:transfer_slice[1]]
+        transfer_auc = float(np.trapezoid(transfer[transfer >= ref_val] - ref_val))
+
+        rows.append({'participant': str(rec['participant']), 't': t,
+                     'learn_auc': learn_auc, 'transfer_auc': transfer_auc})
+    return rows
 
 
 def compute_pca_components(ann_data, variance_threshold=0.99):
@@ -420,3 +524,37 @@ def add_ann_metrics(rich_data, lazy_data, rich_group_params, lazy_group_params):
     ann_behav_df = pd.DataFrame(ann_behav_data)
 
     return ann_behav_df
+
+
+def build_ann_interference_df(base_folder, noise_cells, rich_regime='rich_50',
+                              lazy_regime='lazy_50', condition='near'):
+    """Assemble per-participant ANN retest-interference across noise cells.
+
+    For each (a_sd, b_sd) in `noise_cells`, loads the trained sims and the von
+    Mises fits for the rich and lazy regimes, computes the behavioural metrics
+    (including `interference` = 1 - A_weight_A2) via add_ann_metrics, and tags
+    each row with the noise level. Returns one long DataFrame.
+
+    Requires the von Mises fit CSVs produced by scripts/03_fit_vonmises.py, i.e.
+    data/simulations_A-{a}_B-{b}/{regime}_vonmises_fits.csv for each cell.
+    """
+    frames = []
+    for a_sd, b_sd in noise_cells:
+        sim_root = os.path.join(base_folder, 'data', f'simulations_A-{a_sd}_B-{b_sd}')
+
+        rich_data = load_ann_data(os.path.join(sim_root, rich_regime))
+        lazy_data = load_ann_data(os.path.join(sim_root, lazy_regime))
+        rich_fits = pd.read_csv(os.path.join(sim_root, f'{rich_regime}_vonmises_fits.csv'))
+        lazy_fits = pd.read_csv(os.path.join(sim_root, f'{lazy_regime}_vonmises_fits.csv'))
+
+        cell_df = add_ann_metrics(
+            rich_data[condition], lazy_data[condition],
+            rich_fits.loc[rich_fits['condition'] == condition],
+            lazy_fits.loc[lazy_fits['condition'] == condition],
+        )
+        cell_df['a_error_sd'] = a_sd
+        cell_df['b_error_sd'] = b_sd
+        cell_df['noise'] = f'A{a_sd}/B{b_sd}'
+        frames.append(cell_df)
+
+    return pd.concat(frames, ignore_index=True)

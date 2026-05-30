@@ -127,10 +127,10 @@ def fit_ann_data(ann_data):
     
     return grouped_df
 
-def run_analysis(data_type, sim_name=None, base_folder='./'):
+def run_analysis(data_type, sim_name=None, base_folder='./', a_error_sd=0, b_error_sd=0):
     """
     Run von Mises analysis for specified data type.
-    
+
     Parameters
     ----------
     data_type : str
@@ -139,28 +139,31 @@ def run_analysis(data_type, sim_name=None, base_folder='./'):
         Name of simulation folder (required if data_type is 'simulations')
     base_folder : str
         Base project folder path
+    a_error_sd, b_error_sd : int
+        Task A / Task B noise SD (degrees) identifying the simulations folder
+        (simulations_A-{a}_B-{b}). Only used when data_type == 'simulations'.
     """
     # Setup paths
     data_folder = os.path.join(base_folder, 'data')
-    
+
     if data_type == 'participants':
         # Load and fit participant data
         participant_data = pd.read_csv(os.path.join(data_folder, 'participants', 'trial_df.csv'))
         grouped_df = fit_human_data(participant_data)
         output_path = os.path.join(data_folder, 'participants', 'human_vonmises_fits.csv')
-        
+
     elif data_type == 'simulations':
         if not sim_name:
             raise ValueError("Simulation name must be provided for simulation data")
-        # Load and fit simulation data
-        # TODO: use simulations folder based on A_error_sd and B_error_sd
-        ann_data = ann.load_ann_data(os.path.join(data_folder, 'simulations', sim_name))
+        # Load and fit simulation data from the noise-specific folder
+        sim_root = os.path.join(data_folder, f'simulations_A-{int(a_error_sd)}_B-{int(b_error_sd)}')
+        ann_data = ann.load_ann_data(os.path.join(sim_root, sim_name))
         grouped_df = fit_ann_data(ann_data)
-        output_path = os.path.join(data_folder, 'simulations', f'{sim_name}_vonmises_fits.csv')
-    
+        output_path = os.path.join(sim_root, f'{sim_name}_vonmises_fits.csv')
+
     # Create output directory if it doesn't exist
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
+
     # Save results
     grouped_df.to_csv(output_path, index=False)
     print(f"Results saved to {output_path}")
@@ -173,9 +176,14 @@ def main():
                       help='Name of simulation folder (required if data_type is simulations)')
     parser.add_argument('--base-folder', type=str, default='./',
                       help='Base project folder path (default: current directory)')
-    
+    parser.add_argument('--a-error-sd', type=int, default=0,
+                      help='Task A noise SD in degrees identifying the simulations folder (default: 0)')
+    parser.add_argument('--b-error-sd', type=int, default=0,
+                      help='Task B noise SD in degrees identifying the simulations folder (default: 0)')
+
     args = parser.parse_args()
-    run_analysis(args.data_type, args.sim_name, args.base_folder)
+    run_analysis(args.data_type, args.sim_name, args.base_folder,
+                 a_error_sd=args.a_error_sd, b_error_sd=args.b_error_sd)
 
 if __name__ == "__main__":
     main()
